@@ -25,14 +25,6 @@ module.exports = {
 				);
 			};
 			return(out.join('\n'));
-		},
-		particle_line: (name, a, b, count) => {
-			const out = [];
-			l = Math.sqrt(((b.x - a.x)**2 + (b.y - a.y)**2 + (b.z - a.z)**2))
-			d = l / count
-			for (let i=0; i < l; i+=d){
-				out.push(`particle ${name} ~ ~ ~`)
-			}
 		}
   }
 }
