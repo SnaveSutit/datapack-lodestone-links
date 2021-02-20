@@ -3,7 +3,11 @@ A simple data pack that adds a more immersive and more balanced alternative to t
 ### How to install
 Simply download the .zip from the [releases page](https://github.com/SnaveSutit/datapack-lodestone-links/releases/) and drop it into your world's datapack folder, no unzipping required!
 ### How to use
-Video comming soon`TM`
+
+#### Notes:
+- Lodestone Links can teleport into unloaded chunks.
+- Lodestone Links do not work interdimensionally, as lodestone compasses don't either (sticking with the vanilla theme).
+
 ### How to compile the source code
 This data pack was built using [MC Build](https://github.com/mc-build/mc-build), a tool that greatly streamlines the process of creating data packs for vanilla minecraft.
 
