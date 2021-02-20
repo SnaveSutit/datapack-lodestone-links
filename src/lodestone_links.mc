@@ -1,5 +1,6 @@
 function load {
 	scoreboard objectives add lodeLinks.i dummy
+	scoreboard objectives add lodeLinks.id dummy
 
 	execute if data storage lodestone_links:rom {enable:{lodestone_links:1b}} run function lodestone_links:clock_1s
 	execute if data storage lodestone_links:rom {enable:{lodestone_links:0b}} run schedule clear lodestone_links:clock_1s
@@ -87,44 +88,13 @@ function clock_1s {
 		execute if entity @s[nbt={Item:{id:"minecraft:compass",Count:1b,tag:{LodestoneTracked:1b}}}] if data entity @s Item.tag.LodestonePos run tag @s add lodestone_links.compass
 		tag @s add lodestone_links.checked
 	}
-	# Execute as and at eyes of ender on the ground to check if there are on top of a warp stone construct. If there is one, create a warp stone entity
-	execute as @e[type=item,tag=lodestone_links.compass,nbt={OnGround:1b}] at @s positioned ~-2 ~-1 ~-2 if block ~1 ~ ~2 minecraft:diamond_block if block ~2 ~ ~1 minecraft:diamond_block if block ~2 ~ ~3 minecraft:diamond_block if block ~3 ~ ~2 minecraft:diamond_block if block ~ ~ ~2 #lodestone_links:pillar_blocks if block ~1 ~ ~1 #minecraft:slabs if block ~1 ~ ~3 #minecraft:slabs if block ~2 ~ ~ #lodestone_links:pillar_blocks if block ~2 ~ ~4 #lodestone_links:pillar_blocks if block ~3 ~ ~1 #minecraft:slabs if block ~3 ~ ~3 #minecraft:slabs if block ~4 ~ ~2 #lodestone_links:pillar_blocks if block ~ ~1 ~2 #lodestone_links:fence_blocks if block ~2 ~1 ~ #lodestone_links:fence_blocks if block ~2 ~1 ~4 #lodestone_links:fence_blocks if block ~4 ~1 ~2 #lodestone_links:fence_blocks if block ~ ~2 ~2 #lodestone_links:pane_blocks if block ~2 ~2 ~ #lodestone_links:pane_blocks if block ~2 ~2 ~4 #lodestone_links:pane_blocks if block ~4 ~2 ~2 #lodestone_links:pane_blocks if block ~2 ~ ~2 minecraft:beacon align xyz positioned ~2.5 ~1 ~2.5 run {
 
-		# If this dimension is the same as the lodestone's dimension
-		data modify storage lodestone_links:ram dim set from entity @s Item.tag.LodestoneDimension
-		execute store success score #is_same_dim lodeLinks.i run data modify storage lodestone_links:ram dim set from entity @s Dimension
-		execute if score #is_same_dim lodeLinks.i matches 0 run {
-			# Check if this lodestone has the landing pad structure built around it
-			data modify storage lodestone_links:ram pos set value [0.0d,0.0d,0.0d]
-			execute store result storage lodestone_links:ram pos[0] double 1 run data get entity @s Item.tag.LodestonePos.X
-			execute store result storage lodestone_links:ram pos[1] double 1 run data get entity @s Item.tag.LodestonePos.Y
-			execute store result storage lodestone_links:ram pos[2] double 1 run data get entity @s Item.tag.LodestonePos.Z
-
-			scoreboard players set #has_lodestone lodeLinks.i 0
-			summon area_effect_cloud ~ ~ ~ {Tags:["lodestone_links.check"]}
-			execute as @e[type=area_effect_cloud,tag=lodestone_links.check,limit=1,distance=..1] run {
-				data modify entity @s Pos set from storage lodestone_links:ram pos
-				execute at @s run {
-					# Store the success of forceloading into a score
-					execute store success score #is_forceloaded lodeLinks.i run forceload add ~ ~
-					# If the lodestone landing pad is constructed properly, set a flag score
-					execute positioned ~-2 ~ ~-2 if block ~1 ~ ~2 minecraft:iron_block if block ~2 ~ ~1 minecraft:iron_block if block ~2 ~ ~2 minecraft:lodestone if block ~2 ~ ~3 minecraft:iron_block if block ~3 ~ ~2 minecraft:iron_block if block ~ ~ ~2 #lodestone_links:fence_blocks if block ~1 ~ ~1 #minecraft:slabs if block ~1 ~ ~3 #minecraft:slabs if block ~2 ~ ~ #lodestone_links:fence_blocks if block ~2 ~ ~4 #lodestone_links:fence_blocks if block ~3 ~ ~1 #minecraft:slabs if block ~3 ~ ~3 #minecraft:slabs if block ~4 ~ ~2 #lodestone_links:fence_blocks if block ~ ~1 ~2 #lodestone_links:pane_blocks if block ~2 ~1 ~ #lodestone_links:pane_blocks if block ~2 ~1 ~4 #lodestone_links:pane_blocks if block ~4 ~1 ~2 #lodestone_links:pane_blocks positioned ~2.5 ~1 ~2.5 run {
-						<%config.moving_particle_circle('end_rod', {r:0.2, x:0, y:0.1, z:0}, {r:0.1, x:0, y:0, z:0}, 45)%>
-						<%config.moving_particle_circle('end_rod', {r:0.2, x:0, y:0.1, z:0}, {r:0, x:0, y:0.4, z:0}, 32)%>
-						<%config.moving_particle_circle('end_rod', {r:0.2, x:0, y:0.1, z:0}, {r:0, x:0, y:0.3, z:0}, 32)%>
-						<%config.moving_particle_circle('end_rod', {r:0.2, x:0, y:0.1, z:0}, {r:0, x:0, y:0.2, z:0}, 32)%>
-						<%config.moving_particle_circle('end_rod', {r:0.2, x:0, y:0.1, z:0}, {r:0, x:0, y:0.1, z:0}, 32)%>
-						scoreboard players set #has_lodestone lodeLinks.i 1
-					}
-					# Only unforceload this chunk if it was not already forceloaded
-					execute if score #is_forceloaded lodeLinks.i matches 1.. run forceload remove ~ ~
-				}
-				kill @s
-			}
-		}
-
+	# Execute as checking compass items
+	execute as @e[type=item,tag=lodestone_links.compass,tag=lodestone_links.checking] run {
 		# If this lodestone link has a functional landing pad, construct it
-		execute (if score #has_lodestone lodeLinks.i matches 1) {
+		execute (if entity @s[tag=lodestone_links.build] at @s align xyz positioned ~.5 ~ ~.5) {
+			tag @s remove lodestone_links.checking
+			tag @s remove lodestone_links.build
 			tp @s ~ ~ ~
 			data modify entity @s Motion set value [0.0d,0.0d,0.0d]
 			data modify entity @s PickupDelay set value 32767
@@ -139,13 +109,87 @@ function clock_1s {
 				tag @s remove lodestone_links.compass
 				tag @s add lodestone_links.warp
 			}
-		} else {
+		} else execute(at @s){
+			tag @s remove lodestone_links.checking
 			tag @s remove lodestone_links.compass
 			playsound minecraft:block.beacon.deactivate block @a ~ ~ ~ 1 2
 			particle minecraft:enchanted_hit ~ ~.2 ~ 0 0 0 0.2 10 force
 		}
-
 	}
+
+	# Execute as checking lodestone link items
+	execute as @e[type=item,tag=lodestone_links.warp,tag=lodestone_links.checking_old] run {
+		execute (if entity @s[tag=lodestone_links.successful]) {
+			tag @s remove lodestone_links.successful
+			tag @s remove lodestone_links.checking_old
+			# Successfull teleportation effects
+			playsound mythos:lodestone_link.transport block @a ~ ~ ~ 4 1
+			LOOP(10,i){
+				<%config.moving_particle_circle('end_rod', {r:1, x:0, y:0, z:0}, {r:0, x:0, y:0.1+(i*0.1), z:0}, 32)%>
+			}
+			LOOP(10,i){
+				<%config.moving_particle_circle('end_rod', {r:0.5, x:0, y:0, z:0}, {r:0, x:0, y:0.1+(i*0.2), z:0}, 32)%>
+			}
+		} else execute (at @s) {
+			tag @s remove lodestone_links.checking_old
+			# Break beacon warp because it is no longer valid
+			tp @s ~ ~1.8 ~
+			data modify entity @s PickupDelay set value 0
+			data remove entity @s Item.tag.CustomModelData
+			execute store result entity @s Air short 1 run time query gametime
+			tag @s remove lodestone_links.warp
+			<%config.moving_particle_circle('end_rod', {r:0.3, x:0, y:1.9, z:0}, {r:0, x:0, y:-0.25, z:0}, 45)%>
+			particle minecraft:explosion ~ ~1.9 ~ 0 0 0 1 0 force
+			playsound minecraft:entity.blaze.hurt master @a ~ ~ ~ 1 2
+			playsound minecraft:entity.wither.hurt master @a ~ ~ ~ 1 0.1
+		}
+	}
+
+	# Execute as and at eyes of ender on the ground to check if there are on top of a warp stone construct. If there is one, create a warp stone entity
+	execute as @e[type=item,tag=lodestone_links.compass,nbt={OnGround:1b}] at @s unless entity @e[type=item,tag=lodestone_links.warp,distance=..2] positioned ~-2 ~-1 ~-2 if block ~1 ~ ~2 minecraft:diamond_block if block ~2 ~ ~1 minecraft:diamond_block if block ~2 ~ ~3 minecraft:diamond_block if block ~3 ~ ~2 minecraft:diamond_block if block ~ ~ ~2 #lodestone_links:pillar_blocks if block ~1 ~ ~1 #minecraft:slabs if block ~1 ~ ~3 #minecraft:slabs if block ~2 ~ ~ #lodestone_links:pillar_blocks if block ~2 ~ ~4 #lodestone_links:pillar_blocks if block ~3 ~ ~1 #minecraft:slabs if block ~3 ~ ~3 #minecraft:slabs if block ~4 ~ ~2 #lodestone_links:pillar_blocks if block ~ ~1 ~2 #lodestone_links:fence_blocks if block ~2 ~1 ~ #lodestone_links:fence_blocks if block ~2 ~1 ~4 #lodestone_links:fence_blocks if block ~4 ~1 ~2 #lodestone_links:fence_blocks if block ~ ~2 ~2 #lodestone_links:pane_blocks if block ~2 ~2 ~ #lodestone_links:pane_blocks if block ~2 ~2 ~4 #lodestone_links:pane_blocks if block ~4 ~2 ~2 #lodestone_links:pane_blocks if block ~2 ~ ~2 minecraft:beacon align xyz positioned ~2.5 ~1 ~2.5 run {
+		# If this dimension is the same as the lodestone's dimension
+		data modify storage lodestone_links:ram dim set from entity @s Item.tag.LodestoneDimension
+		execute store success score #is_same_dim lodeLinks.i run data modify storage lodestone_links:ram dim set from entity @s Dimension
+		execute if score #is_same_dim lodeLinks.i matches 0 run {
+			# Check if this lodestone has the landing pad structure built around it
+			data modify storage lodestone_links:ram pos set value [0.0d,0.0d,0.0d]
+			execute store result storage lodestone_links:ram pos[0] double 1 run data get entity @s Item.tag.LodestonePos.X
+			execute store result storage lodestone_links:ram pos[1] double 1 run data get entity @s Item.tag.LodestonePos.Y
+			execute store result storage lodestone_links:ram pos[2] double 1 run data get entity @s Item.tag.LodestonePos.Z
+
+			execute store result score @s lodeLinks.id run scoreboard players add #last lodeLinks.id 1
+			tag @s add lodestone_links.checking
+
+			scoreboard players set #has_lodestone lodeLinks.i 0
+			summon area_effect_cloud ~ ~ ~ {Tags:["lodestone_links.check"],Age:-2,Duration:2}
+			execute as @e[type=area_effect_cloud,tag=lodestone_links.check,limit=1,distance=..1] run {
+				scoreboard players operation @s lodeLinks.id = #last lodeLinks.id
+				data modify entity @s Pos set from storage lodestone_links:ram pos
+				execute at @s run {
+					# Store the success of forceloading into a score
+					execute store success score #is_forceloaded lodeLinks.i run forceload add ~ ~
+					# If the lodestone landing pad is constructed properly, set a flag score
+					schedule 1t append {
+						execute as @e[type=area_effect_cloud,tag=lodestone_links.check] at @s positioned ~-2 ~ ~-2 if block ~1 ~ ~2 minecraft:iron_block if block ~2 ~ ~1 minecraft:iron_block if block ~2 ~ ~2 minecraft:lodestone if block ~2 ~ ~3 minecraft:iron_block if block ~3 ~ ~2 minecraft:iron_block if block ~ ~ ~2 #lodestone_links:fence_blocks if block ~1 ~ ~1 #minecraft:slabs if block ~1 ~ ~3 #minecraft:slabs if block ~2 ~ ~ #lodestone_links:fence_blocks if block ~2 ~ ~4 #lodestone_links:fence_blocks if block ~3 ~ ~1 #minecraft:slabs if block ~3 ~ ~3 #minecraft:slabs if block ~4 ~ ~2 #lodestone_links:fence_blocks if block ~ ~1 ~2 #lodestone_links:pane_blocks if block ~2 ~1 ~ #lodestone_links:pane_blocks if block ~2 ~1 ~4 #lodestone_links:pane_blocks if block ~4 ~1 ~2 #lodestone_links:pane_blocks positioned ~2.5 ~1 ~2.5 run {
+							<%config.moving_particle_circle('end_rod', {r:0.2, x:0, y:0.1, z:0}, {r:0.1, x:0, y:0, z:0}, 45)%>
+							<%config.moving_particle_circle('end_rod', {r:0.2, x:0, y:0.1, z:0}, {r:0, x:0, y:0.4, z:0}, 32)%>
+							<%config.moving_particle_circle('end_rod', {r:0.2, x:0, y:0.1, z:0}, {r:0, x:0, y:0.3, z:0}, 32)%>
+							<%config.moving_particle_circle('end_rod', {r:0.2, x:0, y:0.1, z:0}, {r:0, x:0, y:0.2, z:0}, 32)%>
+							<%config.moving_particle_circle('end_rod', {r:0.2, x:0, y:0.1, z:0}, {r:0, x:0, y:0.1, z:0}, 32)%>
+							scoreboard players operation # lodeLinks.i = @s lodeLinks.id
+							execute as @e[type=item,tag=lodestone_links.checking] if score @s lodeLinks.id = # lodeLinks.i run tag @s add lodestone_links.build
+							# Only unforceload this chunk if it was not already forceloaded
+							execute if score #is_forceloaded lodeLinks.i matches 1.. run forceload remove ~ ~
+							# Tick
+							schedule function lodestone_links:clock_1s 1t replace
+							kill @s
+						}
+					}
+				}
+			}
+		}
+	}
+
 	# Tick logic
 	execute as @e[type=item,tag=lodestone_links.warp] at @s run {
 		# If the lodestone link's local structure is malformed it must be deconstructed.
@@ -221,58 +265,62 @@ function clock_1s {
 
 				execute if score @s lodeLinks.i matches 1 run playsound mythos:lodestone_link.charge_up block @a ~ ~ ~ 1 1
 				execute if score @s lodeLinks.i matches 9 run {
-					tag @p[distance=..0.7] add this.player
 
 					data modify storage lodestone_links:ram pos set value [0.0d,0.0d,0.0d]
 					execute store result storage lodestone_links:ram pos[0] double 1 run data get entity @s Item.tag.LodestonePos.X
 					execute store result storage lodestone_links:ram pos[1] double 1 run data get entity @s Item.tag.LodestonePos.Y
 					execute store result storage lodestone_links:ram pos[2] double 1 run data get entity @s Item.tag.LodestonePos.Z
 
-					# Check to see whether the landing pad is still valid
-					scoreboard players set #has_lodestone lodeLinks.i 0
-					summon area_effect_cloud ~ ~ ~ {Tags:["lodeLinks.check"]}
-					execute as @e[type=area_effect_cloud,tag=lodeLinks.check,limit=1,distance=..1] run {
-						data modify entity @s Pos set from storage lodestone_links:ram pos
-						execute at @s run {
-							execute store success score #is_forceloaded lodeLinks.i run forceload add ~ ~
-							execute positioned ~-2 ~ ~-2 if block ~1 ~ ~2 minecraft:iron_block if block ~2 ~ ~1 minecraft:iron_block if block ~2 ~ ~2 minecraft:lodestone if block ~2 ~ ~3 minecraft:iron_block if block ~3 ~ ~2 minecraft:iron_block if block ~ ~ ~2 #lodestone_links:fence_blocks if block ~1 ~ ~1 #minecraft:slabs if block ~1 ~ ~3 #minecraft:slabs if block ~2 ~ ~ #lodestone_links:fence_blocks if block ~2 ~ ~4 #lodestone_links:fence_blocks if block ~3 ~ ~1 #minecraft:slabs if block ~3 ~ ~3 #minecraft:slabs if block ~4 ~ ~2 #lodestone_links:fence_blocks if block ~ ~1 ~2 #lodestone_links:pane_blocks if block ~2 ~1 ~ #lodestone_links:pane_blocks if block ~2 ~1 ~4 #lodestone_links:pane_blocks if block ~4 ~1 ~2 #lodestone_links:pane_blocks positioned ~2.5 ~1 ~2.5 run {
-								# Teleport the player if the landing pad is valid
-								tp @a[tag=this.player] ~ ~1 ~
-								playsound mythos:lodestone_link.transport block @a ~ ~ ~ 4 1
-								effect give @a[tag=this.player] minecraft:blindness 3 1 true
-								effect give @a[tag=this.player] minecraft:nausea 10 127 true
-								<%config.moving_particle_circle('end_rod', {r:0.3, x:0, y:1, z:0}, {r:1, x:0, y:0, z:0}, 1000)%>
-								<%config.moving_particle_circle('end_rod', {r:0.3, x:0, y:1, z:0}, {r:0.5, x:0, y:0, z:0}, 500)%>
-								<%config.moving_particle_circle('end_rod', {r:0.3, x:0, y:1, z:0}, {r:0.1, x:0, y:0, z:0}, 45)%>
-								scoreboard players set #has_lodestone lodeLinks.i 1
-							}
-							execute if score #is_forceloaded lodeLinks.i matches 1.. run forceload remove ~ ~
-						}
-						kill @s
+					scoreboard players operation #link lodeLinks.id = @s lodeLinks.id
+					tag @s add lodestone_links.checking_old
+					execute as @p[distance=..0.7] run {
+						tag @s add this.player
+						scoreboard players operation @s lodeLinks.id = #link lodeLinks.id
 					}
 
-					execute (if score #has_lodestone lodeLinks.i matches 1) {
-						# Successfull teleportation effects
-						playsound mythos:lodestone_link.transport block @a ~ ~ ~ 4 1
-						LOOP(10,i){
-							<%config.moving_particle_circle('end_rod', {r:1, x:0, y:0, z:0}, {r:0, x:0, y:0.1+(i*0.1), z:0}, 32)%>
+					# Check to see whether the landing pad is still valid
+					scoreboard players set #has_lodestone lodeLinks.i 0
+					summon area_effect_cloud ~ ~ ~ {Tags:["lodestone_links.check"],Age:-2,Duration:2}
+					execute as @e[type=area_effect_cloud,tag=lodestone_links.check,limit=1,distance=..1] run {
+						scoreboard players operation @s lodeLinks.id = #link lodeLinks.id
+						data modify entity @s Pos set from storage lodestone_links:ram pos
+						execute at @s run {
+							# Store the success of forceloading into a score
+							execute store success score #is_forceloaded lodeLinks.i run forceload add ~ ~
+							# If the lodestone landing pad is constructed properly, set a flag score
+							schedule 1t append {
+								execute (as @e[type=area_effect_cloud,tag=lodestone_links.check] at @s positioned ~-2 ~ ~-2 if block ~1 ~ ~2 minecraft:iron_block if block ~2 ~ ~1 minecraft:iron_block if block ~2 ~ ~2 minecraft:lodestone if block ~2 ~ ~3 minecraft:iron_block if block ~3 ~ ~2 minecraft:iron_block if block ~ ~ ~2 #lodestone_links:fence_blocks if block ~1 ~ ~1 #minecraft:slabs if block ~1 ~ ~3 #minecraft:slabs if block ~2 ~ ~ #lodestone_links:fence_blocks if block ~2 ~ ~4 #lodestone_links:fence_blocks if block ~3 ~ ~1 #minecraft:slabs if block ~3 ~ ~3 #minecraft:slabs if block ~4 ~ ~2 #lodestone_links:fence_blocks if block ~ ~1 ~2 #lodestone_links:pane_blocks if block ~2 ~1 ~ #lodestone_links:pane_blocks if block ~2 ~1 ~4 #lodestone_links:pane_blocks if block ~4 ~1 ~2 #lodestone_links:pane_blocks positioned ~2.5 ~1 ~2.5) {
+									# Teleport the player if the landing pad is valid
+									scoreboard players operation # lodeLinks.i = @s lodeLinks.id
+									execute as @e[type=item,tag=lodestone_links.checking_old] if score @s lodeLinks.id = # lodeLinks.i run tag @s add lodestone_links.successful
+
+									execute as @a[tag=this.player] if score @s lodeLinks.id = #link lodeLinks.id run {
+										tp @s ~ ~1 ~
+										scoreboard players reset @s lodeLinks.id
+										advancement grant @s only mythos:overlode
+										tag @s remove this.player
+									}
+									playsound mythos:lodestone_link.transport block @a ~ ~ ~ 4 1
+									effect give @a[tag=this.player] minecraft:blindness 3 1 true
+									effect give @a[tag=this.player] minecraft:nausea 10 127 true
+									<%config.moving_particle_circle('end_rod', {r:0.3, x:0, y:1, z:0}, {r:1, x:0, y:0, z:0}, 1000)%>
+									<%config.moving_particle_circle('end_rod', {r:0.3, x:0, y:1, z:0}, {r:0.5, x:0, y:0, z:0}, 500)%>
+									<%config.moving_particle_circle('end_rod', {r:0.3, x:0, y:1, z:0}, {r:0.1, x:0, y:0, z:0}, 45)%>
+
+									# Only unforceload this chunk if it was not already forceloaded
+									execute if score #is_forceloaded lodeLinks.i matches 1.. run forceload remove ~ ~
+									# Tick
+									schedule function lodestone_links:clock_1s 1t replace
+									kill @s
+								} else {
+									execute as @a[tag=this.player] if score @s lodeLinks.id = #link lodeLinks.id run {
+										scoreboard players reset @s lodeLinks.id
+										tag @s remove this.player
+									}
+								}
+							}
 						}
-						LOOP(10,i){
-							<%config.moving_particle_circle('end_rod', {r:0.5, x:0, y:0, z:0}, {r:0, x:0, y:0.1+(i*0.2), z:0}, 32)%>
-						}
-					} else {
-						# Break beacon warp because it is no longer valid
-						tp @s ~ ~1.8 ~
-						data modify entity @s PickupDelay set value 0
-						data remove entity @s Item.tag.CustomModelData
-						execute store result entity @s Air short 1 run time query gametime
-						tag @s remove lodestone_links.warp
-						<%config.moving_particle_circle('end_rod', {r:0.3, x:0, y:1.9, z:0}, {r:0, x:0, y:-0.25, z:0}, 45)%>
-						particle minecraft:explosion ~ ~1.9 ~ 0 0 0 1 0 force
-						playsound minecraft:entity.blaze.hurt master @a ~ ~ ~ 1 2
-						playsound minecraft:entity.wither.hurt master @a ~ ~ ~ 1 0.1
 					}
-					tag @a remove this.player
 				}
 			} else {
 				# Cancel Teleportation
