@@ -3,7 +3,7 @@ A simple data pack that adds a more immersive and more balanced alternative to t
 ### How to install
 Simply download the .zip from the [releases page](https://github.com/SnaveSutit/datapack-lodestone-links/releases/) and drop it into your world's datapack folder, no unzipping required!
 ### How to use
-[A quick youtube video on how to use this data pack in survival](https://youtu.be/-7aA_mV6XqU)
+Video comming soon`TM`
 ### How to compile the source code
 This data pack was built using [MC Build](https://github.com/mc-build/mc-build), a tool that greatly streamlines the process of creating data packs for vanilla minecraft.
 
