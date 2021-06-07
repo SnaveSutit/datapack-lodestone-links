@@ -6,7 +6,7 @@ Simply download the .zip from the [releases page](https://github.com/SnaveSutit/
 
 #### Notes:
 - Lodestone Links can teleport into unloaded chunks.
-- Lodestone Links do not work interdimensionally, as lodestone compasses don't either (sticking with the vanilla theme).
+- Lodestone Links do not work interdimensionally, as lodestone compasses don't either.
 
 ### How to compile the source code
 This data pack was built using [MC Build](https://github.com/mc-build/mc-build), a tool that greatly streamlines the process of creating data packs for vanilla minecraft.
